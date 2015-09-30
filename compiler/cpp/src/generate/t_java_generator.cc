@@ -512,7 +512,7 @@ void t_java_generator::generate_enum(t_enum* tenum) {
   // Make output file
   string f_enum_name = package_dir_ + "/" + make_valid_java_filename(tenum->get_name()) + ".java";
   ofstream f_enum;
-  f_enum.open(f_enum_name.c_str());
+  f_enum.open(f_enum_name.c_str(), std::ios_base::out | std::ios_base::binary);
 
   // Comment and package it
   f_enum << autogen_comment() << java_package() << endl;
@@ -602,7 +602,7 @@ void t_java_generator::generate_consts(std::vector<t_const*> consts) {
   string f_consts_name = package_dir_ + '/' + make_valid_java_filename(program_name_)
                          + "Constants.java";
   ofstream f_consts;
-  f_consts.open(f_consts_name.c_str());
+  f_consts.open(f_consts_name.c_str(), std::ios_base::out | std::ios_base::binary);
 
   // Print header
   f_consts << autogen_comment() << java_package() << java_type_imports() << java_suppressions();
@@ -815,7 +815,7 @@ void t_java_generator::generate_java_struct(t_struct* tstruct, bool is_exception
   string f_struct_name = package_dir_ + "/" + make_valid_java_filename(tstruct->get_name())
                          + ".java";
   ofstream f_struct;
-  f_struct.open(f_struct_name.c_str());
+  f_struct.open(f_struct_name.c_str(), std::ios_base::out | std::ios_base::binary);
 
   f_struct << autogen_comment() << java_package() << java_type_imports() << java_suppressions();
 
@@ -833,7 +833,7 @@ void t_java_generator::generate_java_union(t_struct* tstruct) {
   string f_struct_name = package_dir_ + "/" + make_valid_java_filename(tstruct->get_name())
                          + ".java";
   ofstream f_struct;
-  f_struct.open(f_struct_name.c_str());
+  f_struct.open(f_struct_name.c_str(), std::ios_base::out | std::ios_base::binary);
 
   f_struct << autogen_comment() << java_package() << java_type_imports() << java_suppressions();
 
@@ -2704,7 +2704,7 @@ void t_java_generator::generate_field_value_meta_data(std::ofstream& out, t_type
 void t_java_generator::generate_service(t_service* tservice) {
   // Make output file
   string f_service_name = package_dir_ + "/" + make_valid_java_filename(service_name_) + ".java";
-  f_service_.open(f_service_name.c_str());
+  f_service_.open(f_service_name.c_str(), std::ios_base::out | std::ios_base::binary);
 
   f_service_ << autogen_comment() << java_package() << java_type_imports() << java_suppressions();
 
