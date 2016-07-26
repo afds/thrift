@@ -117,7 +117,11 @@ if(WITH_BOOSTTHREADS)
     )
     list(APPEND SYSLIBS "${Boost_LIBRARIES}")
 elseif(UNIX AND NOT WITH_STDTHREADS)
-    list(APPEND SYSLIBS pthread)
+    if(ANDROID)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    else()
+        list(APPEND SYSLIBS pthread)
+    endif()
     set( thriftcpp_threads_SOURCES
         src/thrift/concurrency/PosixThreadFactory.cpp
         src/thrift/concurrency/Mutex.cpp
@@ -125,8 +129,11 @@ elseif(UNIX AND NOT WITH_STDTHREADS)
     )
 else()
     if(UNIX)
-        # need pthread for multi-thread support
-        list(APPEND SYSLIBS pthread)
+        if(ANDROID)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+        else()
+            list(APPEND SYSLIBS pthread)
+        endif()
     endif()
     set( thriftcpp_threads_SOURCES
         src/thrift/concurrency/StdThreadFactory.cpp
@@ -146,6 +153,10 @@ set( thriftcppnb_SOURCES
 # Thrift zlib server
 set( thriftcppz_SOURCES
     src/thrift/transport/TZlibTransport.cpp
+    src/thrift/protocol/THeaderProtocol.cpp
+    src/thrift/transport/THeaderTransport.cpp
+    src/thrift/protocol/THeaderProtocol.cpp
+    src/thrift/transport/THeaderTransport.cpp
 )
 
 # Thrift Qt4 server
@@ -158,7 +169,11 @@ set( thriftcppqt_SOURCES
 include(ThriftMacros)
 
 ADD_LIBRARY_THRIFT(thrift ${thriftcpp_SOURCES} ${thriftcpp_threads_SOURCES})
-TARGET_LINK_LIBRARIES_THRIFT(thrift ${SYSLIBS})
+if(WIN32)
+    TARGET_LINK_LIBRARIES_THRIFT(thrift ${SYSLIBS} ws2_32)
+else()
+    TARGET_LINK_LIBRARIES_THRIFT(thrift ${SYSLIBS})
+endif()
 
 if(WITH_LIBEVENT)
     find_package(Libevent REQUIRED)  # Libevent comes with CMake support form upstream

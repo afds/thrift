@@ -52,6 +52,12 @@ public:
     (void)parsed_options;
     (void)option_string;
     std::map<std::string, std::string>::const_iterator iter;
+
+    /* no options yet */
+    for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
+      throw "unknown option javame:" + iter->first; 
+    }
+
     out_dir_base_ = "gen-javame";
   }
 
@@ -546,7 +552,7 @@ string t_javame_generator::render_const_value(ofstream& out,
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "true" : "false");
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       render << "(byte)" << value->get_integer();
       break;
     case t_base_type::TYPE_I16:
@@ -584,7 +590,7 @@ string t_javame_generator::box_type(t_type* type, string value) {
     switch (((t_base_type*)type)->get_base()) {
     case t_base_type::TYPE_BOOL:
       return "new Boolean(" + value + ")";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "new Byte(" + value + ")";
     case t_base_type::TYPE_I16:
       return "new Short(" + value + ")";
@@ -1785,7 +1791,7 @@ std::string t_javame_generator::get_java_type_string(t_type* type) {
     case t_base_type::TYPE_BOOL:
       return "TType.BOOL";
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "TType.BYTE";
       break;
     case t_base_type::TYPE_I16:
@@ -1816,7 +1822,7 @@ void t_javame_generator::generate_field_value_meta_data(std::ofstream& out, t_ty
   out << endl;
   indent_up();
   indent_up();
-  if (type->is_struct()) {
+  if (type->is_struct() || type->is_xception()) {
     indent(out) << "new StructMetaData(TType.STRUCT, " << type_name(type) << ".class";
   } else if (type->is_container()) {
     if (type->is_list()) {
@@ -2415,7 +2421,7 @@ void t_javame_generator::generate_deserialize_field(ofstream& out, t_field* tfie
     case t_base_type::TYPE_BOOL:
       out << "readBool();";
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       out << "readByte();";
       break;
     case t_base_type::TYPE_I16:
@@ -2611,7 +2617,7 @@ void t_javame_generator::generate_serialize_field(ofstream& out, t_field* tfield
       case t_base_type::TYPE_BOOL:
         out << "writeBool(" << name << ");";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
         out << "writeByte(" << name << ");";
         break;
       case t_base_type::TYPE_I16:
@@ -2814,7 +2820,7 @@ string t_javame_generator::base_type_name(t_base_type* type, bool in_container) 
     }
   case t_base_type::TYPE_BOOL:
     return (in_container ? "Boolean" : "boolean");
-  case t_base_type::TYPE_BYTE:
+  case t_base_type::TYPE_I8:
     return (in_container ? "Byte" : "byte");
   case t_base_type::TYPE_I16:
     return (in_container ? "Short" : "short");
@@ -2853,7 +2859,7 @@ string t_javame_generator::declare_field(t_field* tfield, bool init) {
       case t_base_type::TYPE_BOOL:
         result += " = false";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
       case t_base_type::TYPE_I16:
       case t_base_type::TYPE_I32:
       case t_base_type::TYPE_I64:
@@ -2934,7 +2940,7 @@ string t_javame_generator::type_to_enum(t_type* type) {
       return "TType.STRING";
     case t_base_type::TYPE_BOOL:
       return "TType.BOOL";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "TType.BYTE";
     case t_base_type::TYPE_I16:
       return "TType.I16";
@@ -3263,7 +3269,7 @@ void t_javame_generator::generate_java_struct_clear(std::ofstream& out, t_struct
         indent(out) << "set" << get_cap_name((*m_iter)->get_name()) << get_cap_name("isSet")
                     << "(false);" << endl;
         switch (((t_base_type*)t)->get_base()) {
-        case t_base_type::TYPE_BYTE:
+        case t_base_type::TYPE_I8:
         case t_base_type::TYPE_I16:
         case t_base_type::TYPE_I32:
         case t_base_type::TYPE_I64:

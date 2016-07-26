@@ -42,23 +42,33 @@ precross-%: all
 	$(MAKE) -C $* precross
 precross: all precross-test precross-lib
 
-# TODO: generate --server and --client switches from "--with(out)-..." build flags
-
-
 empty :=
 space := $(empty) $(empty)
 comma := ,
 
-CROSS_LANGS = @MAYBE_CPP@ @MAYBE_C_GLIB@ @MAYBE_JAVA@ @MAYBE_CSHARP@ @MAYBE_PYTHON@ @MAYBE_RUBY@ @MAYBE_HASKELL@ @MAYBE_PERL@ @MAYBE_PHP@ @MAYBE_GO@ @MAYBE_NODEJS@
+CROSS_LANGS = @MAYBE_CPP@ @MAYBE_C_GLIB@ @MAYBE_D@ @MAYBE_JAVA@ @MAYBE_CSHARP@ @MAYBE_PYTHON@ @MAYBE_PY3@ @MAYBE_RUBY@ @MAYBE_HASKELL@ @MAYBE_PERL@ @MAYBE_PHP@ @MAYBE_GO@ @MAYBE_NODEJS@ @MAYBE_DART@ @MAYBE_ERLANG@ @MAYBE_LUA@
 CROSS_LANGS_COMMA_SEPARATED = $(subst $(space),$(comma),$(CROSS_LANGS))
 
+if WITH_PY3
+CROSS_PY=$(PYTHON3)
+else
+CROSS_PY=$(PYTHON)
+endif
+
+if WITH_PYTHON
 cross: precross
-	$(PYTHON) test/test.py -s --server $(CROSS_LANGS_COMMA_SEPARATED) --client $(CROSS_LANGS_COMMA_SEPARATED)
+	$(CROSS_PY) test/test.py --retry-count 3 --features .* --skip-known-failures --server $(CROSS_LANGS_COMMA_SEPARATED)
+	$(CROSS_PY) test/test.py --retry-count 3 --skip-known-failures --server $(CROSS_LANGS_COMMA_SEPARATED) --client $(CROSS_LANGS_COMMA_SEPARATED)
+else
+# feature test needs python build
+cross: precross
+	$(CROSS_PY) test/test.py -s --server $(CROSS_LANGS_COMMA_SEPARATED) --client $(CROSS_LANGS_COMMA_SEPARATED)
+endif
 
 TIMES = 1 2 3
 fail: precross
-	$(PYTHON) test/test.py || true
-	$(PYTHON) test/test.py --update-expected-failures=overwrite
+	$(CROSS_PY) test/test.py || true
+	$(CROSS_PY) test/test.py --update-expected-failures=overwrite
 	$(foreach var,$(TIMES),test/test.py -s || true;test/test.py --update-expected-failures=merge;)
 
 codespell_skip_files = \
@@ -100,11 +110,11 @@ EXTRA_DIST = \
 	debian \
 	doc \
 	doap.rdf \
-	json-schema.json \
 	package.json \
-	rat_exclude \
 	sonar-project.properties \
+	Dockerfile \
 	LICENSE \
 	CHANGES \
 	NOTICE \
-	README.md
+	README.md \
+	Thrift.podspec

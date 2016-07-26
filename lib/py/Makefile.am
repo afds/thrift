@@ -19,7 +19,20 @@
 AUTOMAKE_OPTIONS = serial-tests
 DESTDIR ?= /
 
-all-local:
+if WITH_PY3
+py3-build:
+	$(PIP3) install -r requirements.txt || $(PIP3) install --user -r requirements.txt
+	$(PYTHON3) setup.py build
+py3-test: py3-build
+	$(PYTHON3) test/thrift_json.py
+	$(PYTHON3) test/test_sslsocket.py
+else
+py3-build:
+py3-test:
+endif
+
+all-local: py3-build
+	$(PIP) install -r requirements.txt || $(PIP) install --user -r requirements.txt
 	$(PYTHON) setup.py build
 
 # We're ignoring prefix here because site-packages seems to be
@@ -27,18 +40,23 @@ all-local:
 # Old version (can't put inline because it's not portable).
 #$(PYTHON) setup.py install --prefix=$(prefix) --root=$(DESTDIR) $(PYTHON_SETUPUTIL_ARGS)
 install-exec-hook:
+	$(PIP) install -r requirements.txt
 	$(PYTHON) setup.py install --root=$(DESTDIR) --prefix=$(PY_PREFIX) $(PYTHON_SETUPUTIL_ARGS)
 
 clean-local:
 	$(RM) -r build
 
-check-local: all
+check-local: all py3-test
+	$(PYTHON) test/thrift_json.py
+	$(PYTHON) test/test_sslsocket.py
 
 EXTRA_DIST = \
 	CMakeLists.txt \
 	coding_standards.md \
 	compat \
+	requirements.txt \
 	setup.py \
 	setup.cfg \
 	src \
+	test \
 	README.md

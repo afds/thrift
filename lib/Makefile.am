@@ -17,7 +17,7 @@
 # under the License.
 #
 
-SUBDIRS =
+SUBDIRS = json xml
 PRECROSS_TARGET =
 
 if WITH_CPP
@@ -38,7 +38,7 @@ SUBDIRS += java
 PRECROSS_TARGET += precross-java
 # JavaScript unit test depends on java
 # so test only if java, ant & co is available
-SUBDIRS += js/test
+SUBDIRS += js
 endif
 
 if WITH_PYTHON
@@ -65,12 +65,17 @@ if WITH_PHP
 SUBDIRS += php
 endif
 
+if WITH_DART
+SUBDIRS += dart
+endif
+
 if WITH_GO
 SUBDIRS += go
 endif
 
 if WITH_D
 SUBDIRS += d
+PRECROSS_TARGET += precross-d
 endif
 
 if WITH_NODEJS
@@ -88,6 +93,7 @@ EXTRA_DIST = \
 	as3 \
 	cocoa \
 	d \
+	dart \
 	delphi \
 	haxe \
 	javame \

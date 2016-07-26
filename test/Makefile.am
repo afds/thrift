@@ -17,7 +17,7 @@
 # under the License.
 #
 
-SUBDIRS =
+SUBDIRS = features
 PRECROSS_TARGET =
 
 if WITH_C_GLIB
@@ -38,6 +38,11 @@ endif
 if WITH_PHP
 SUBDIRS += php
 PRECROSS_TARGET += precross-php
+endif
+
+if WITH_DART
+SUBDIRS += dart
+PRECROSS_TARGET += precross-dart
 endif
 
 if WITH_PYTHON
@@ -67,6 +72,12 @@ endif
 
 if WITH_ERLANG
 SUBDIRS += erl
+PRECROSS_TARGET += precross-erl
+endif
+
+if WITH_LUA
+SUBDIRS += lua
+PRECROSS_TARGET += precross-lua
 endif
 
 #
@@ -84,6 +95,7 @@ EXTRA_DIST = \
 	keys \
 	c_glib \
 	cpp \
+	dart \
 	erl \
 	hs \
 	lua \
@@ -102,7 +114,7 @@ EXTRA_DIST = \
 	DenseLinkingTest.thrift \
 	DocTest.thrift \
 	EnumTest.thrift \
-	known_failures_Linux.json \
+	FullCamelTest.thrift \
 	Include.thrift \
 	JavaBeansTest.thrift \
 	JsDeepConstructorTest.thrift \
@@ -114,12 +126,14 @@ EXTRA_DIST = \
 	ReuseObjects.thrift \
 	SmallTest.thrift \
 	StressTest.thrift \
-	test.py \
-	tests.json \
 	ThriftTest.thrift \
 	TypedefTest.thrift \
-	FastbinaryTest.py \
-	result.html \
+	known_failures_Linux.json \
+	test.py \
+	tests.json \
+	rebuild_known_failures.sh \
+	result.js \
+	index.html \
 	README.md \
 	valgrind.suppress
 

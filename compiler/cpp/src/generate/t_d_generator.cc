@@ -59,8 +59,14 @@ public:
                 const std::map<string, string>& parsed_options,
                 const string& option_string)
     : t_oop_generator(program) {
-    (void)parsed_options;
     (void)option_string;
+    std::map<std::string, std::string>::const_iterator iter;
+
+    /* no options yet */
+    for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
+      throw "unknown option d:" + iter->first; 
+    }
+
     out_dir_base_ = "gen-d";
   }
 
@@ -504,7 +510,7 @@ private:
       case t_base_type::TYPE_BOOL:
         out << ((value->get_integer() > 0) ? "true" : "false");
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
       case t_base_type::TYPE_I16:
         out << "cast(" << render_type_name(type) << ")" << value->get_integer();
         break;
@@ -622,7 +628,7 @@ private:
         return "string";
       case t_base_type::TYPE_BOOL:
         return "bool";
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
         return "byte";
       case t_base_type::TYPE_I16:
         return "short";
