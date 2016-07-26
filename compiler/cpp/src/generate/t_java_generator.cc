@@ -3764,7 +3764,16 @@ void t_java_generator::generate_deserialize_map_element(ofstream& out,
   generate_deserialize_field(out, &fkey, "", has_metadata);
   generate_deserialize_field(out, &fval, "", has_metadata);
 
+  if (get_true_type(fkey.get_type())->is_enum()) {
+    indent(out) << "if (" << key << " != null)" << endl;
+    scope_up(out);
+  }
+
   indent(out) << prefix << ".put(" << key << ", " << val << ");" << endl;
+
+  if (get_true_type(fkey.get_type())->is_enum()) {
+    scope_down(out);
+  }
 
   if (reuse_objects_ && !get_true_type(fkey.get_type())->is_base_type()) {
     indent(out) << key << " = null;" << endl;
@@ -3797,7 +3806,16 @@ void t_java_generator::generate_deserialize_set_element(ofstream& out,
 
   generate_deserialize_field(out, &felem, "", has_metadata);
 
+  if (get_true_type(felem.get_type())->is_enum()) {
+    indent(out) << "if (" << elem << " != null)" << endl;
+    scope_up(out);
+  }
+
   indent(out) << prefix << ".add(" << elem << ");" << endl;
+
+  if (get_true_type(felem.get_type())->is_enum()) {
+    scope_down(out);
+  }
 
   if (reuse_objects_ && !get_true_type(felem.get_type())->is_base_type()) {
     indent(out) << elem << " = null;" << endl;
@@ -3826,7 +3844,16 @@ void t_java_generator::generate_deserialize_list_element(ofstream& out,
 
   generate_deserialize_field(out, &felem, "", has_metadata);
 
+  if (get_true_type(felem.get_type())->is_enum()) {
+    indent(out) << "if (" << elem << " != null)" << endl;
+    scope_up(out);
+  }
+
   indent(out) << prefix << ".add(" << elem << ");" << endl;
+
+  if (get_true_type(felem.get_type())->is_enum()) {
+    scope_down(out);
+  }
 
   if (reuse_objects_ && !get_true_type(felem.get_type())->is_base_type()) {
     indent(out) << elem << " = null;" << endl;
