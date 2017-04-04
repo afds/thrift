@@ -4803,15 +4803,16 @@ void t_java_generator::generate_deep_copy_non_container(ofstream& out,
                                                         std::string dest_name,
                                                         t_type* type) {
   (void)dest_name;
-  if (type->is_base_type() || type->is_enum()) {
-    if (((t_base_type*)type)->is_binary()) {
+  t_type* tt = get_true_type(type);
+  if (tt->is_base_type() || tt->is_enum() || tt->is_typedef()) {
+    if (((t_base_type*)tt)->is_binary()) {
       out << "org.apache.thrift.TBaseHelper.copyBinary(" << source_name << ")";
     } else {
       // everything else can be copied directly
       out << source_name;
     }
   } else {
-    out << "new " << type_name(type, true, true) << "(" << source_name << ")";
+    out << "new " << type_name(tt, true, true) << "(" << source_name << ")";
   }
 }
 
