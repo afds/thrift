@@ -27,6 +27,7 @@
 
 #include <thrift/c_glib/thrift.h>
 #include <thrift/c_glib/protocol/thrift_binary_protocol.h>
+#include <thrift/c_glib/protocol/thrift_compact_protocol.h>
 #include <thrift/c_glib/transport/thrift_buffered_transport.h>
 #include <thrift/c_glib/transport/thrift_framed_transport.h>
 #include <thrift/c_glib/transport/thrift_socket.h>
@@ -89,7 +90,7 @@ main (int argc, char **argv)
     { "transport",       0, 0, G_OPTION_ARG_STRING,   &transport_option,
       "Transport: buffered, framed (=buffered)", NULL },
     { "protocol",        0, 0, G_OPTION_ARG_STRING,   &protocol_option,
-      "Protocol: binary (=binary)", NULL },
+      "Protocol: binary, compact (=binary)", NULL },
     { "testloops",     'n', 0, G_OPTION_ARG_INT,      &num_tests,
       "Number of tests (=1)", NULL },
     { NULL }
@@ -141,10 +142,15 @@ main (int argc, char **argv)
     host = g_strdup ("localhost");
 
   /* Validate the parsed options */
-  if (protocol_option != NULL &&
-      strncmp (protocol_option, "binary", 7) != 0) {
-    fprintf (stderr, "Unknown protocol type %s\n", protocol_option);
-    options_valid = FALSE;
+  if (protocol_option != NULL) {
+    if (strncmp (protocol_option, "compact", 8) == 0) {
+      protocol_type = THRIFT_TYPE_COMPACT_PROTOCOL;
+      protocol_name = "compact";
+    }
+    else if (strncmp (protocol_option, "binary", 7) != 0) {
+      fprintf (stderr, "Unknown protocol type %s\n", protocol_option);
+      options_valid = FALSE;
+    }
   }
 
   if (transport_option != NULL) {
@@ -347,6 +353,22 @@ main (int argc, char **argv)
                                            &error)) {
         printf (" = %d\n", byte);
         if (byte != 1)
+          fail_count++;
+      }
+      else {
+        printf ("%s\n", error->message);
+        g_error_free (error);
+        error = NULL;
+
+        fail_count++;
+      }
+      printf ("testByte(-1)");
+      if (t_test_thrift_test_if_test_byte (test_client,
+                                           &byte,
+                                           -1,
+                                           &error)) {
+        printf (" = %d\n", byte);
+        if (byte != -1)
           fail_count++;
       }
       else {

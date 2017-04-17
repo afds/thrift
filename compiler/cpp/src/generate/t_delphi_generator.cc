@@ -60,16 +60,26 @@ public:
     has_const = false;
     std::map<std::string, std::string>::const_iterator iter;
 
-    iter = parsed_options.find("ansistr_binary");
-    ansistr_binary_ = (iter != parsed_options.end());
-    iter = parsed_options.find("register_types");
-    register_types_ = (iter != parsed_options.end());
-    iter = parsed_options.find("constprefix");
-    constprefix_ = (iter != parsed_options.end());
-    iter = parsed_options.find("events");
-    events_ = (iter != parsed_options.end());
-    iter = parsed_options.find("xmldoc");
-    xmldoc_ = (iter != parsed_options.end());
+    ansistr_binary_ = false;
+    register_types_ = false;
+    constprefix_ = false;
+    events_ = false;
+    xmldoc_ = false;
+    for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
+      if( iter->first.compare("ansistr_binary") == 0) {
+        ansistr_binary_ = true;
+      } else if( iter->first.compare("register_types") == 0) {
+        register_types_ = true;
+      } else if( iter->first.compare("constprefix") == 0) {
+        constprefix_ = true;
+      } else if( iter->first.compare("events") == 0) {
+        events_ = true;
+      } else if( iter->first.compare("xmldoc") == 0) {
+        xmldoc_ = true;
+      } else {
+        throw "unknown option delphi:" + iter->first; 
+      }
+    }
 
     out_dir_base_ = "gen-delphi";
     escape_.clear();
@@ -975,7 +985,7 @@ void t_delphi_generator::init_known_types_list() {
   types_known[type_name(g_type_string)] = 1;
   types_known[type_name(g_type_binary)] = 1;
   types_known[type_name(g_type_bool)] = 1;
-  types_known[type_name(g_type_byte)] = 1;
+  types_known[type_name(g_type_i8)] = 1;
   types_known[type_name(g_type_i16)] = 1;
   types_known[type_name(g_type_i32)] = 1;
   types_known[type_name(g_type_i64)] = 1;
@@ -1329,7 +1339,7 @@ string t_delphi_generator::render_const_value(ostream& vars,
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "True" : "False");
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       render << "ShortInt( " << value->get_integer() << ")";
       break;
     case t_base_type::TYPE_I16:
@@ -2121,8 +2131,7 @@ void t_delphi_generator::generate_service_client(t_service* tservice) {
 
       if (!(*f_iter)->get_returntype()->is_void()) {
         indent_impl(s_service_impl)
-            << "raise "
-               "TApplicationException.Create(TApplicationException.TExceptionType.MissingResult, '"
+			<< "raise TApplicationExceptionMissingResult.Create('"
             << (*f_iter)->get_name() << " failed: unknown result');" << endl;
       }
 
@@ -2245,9 +2254,8 @@ void t_delphi_generator::generate_service_server(t_service* tservice) {
   indent_impl(s_service_impl) << "TProtocolUtil.Skip(iprot, TType.Struct);" << endl;
   indent_impl(s_service_impl) << "iprot.ReadMessageEnd();" << endl;
   indent_impl(s_service_impl) << "x := "
-                                 "TApplicationException.Create(TApplicationException."
-                                 "TExceptionType.UnknownMethod, 'Invalid method name: ''' + "
-                                 "msg.Name + '''');" << endl;
+								 "TApplicationExceptionUnknownMethod.Create("
+								 "'Invalid method name: ''' + msg.Name + '''');" << endl;
   indent_impl(s_service_impl)
       << "msg := Thrift.Protocol.TMessageImpl.Create(msg.Name, TMessageType.Exception, msg.SeqID);"
       << endl;
@@ -2283,8 +2291,18 @@ void t_delphi_generator::generate_service_server(t_service* tservice) {
   indent_down_impl();
   indent_impl(s_service_impl) << "except" << endl;
   indent_up_impl();
+  indent_impl(s_service_impl) << "on TTransportExceptionTimedOut do begin" << endl;
+  indent_up_impl();
+  indent_impl(s_service_impl) << "Result := True;" << endl;
+  indent_impl(s_service_impl) << "Exit;" << endl;
+  indent_down_impl();
+  indent_impl(s_service_impl) << "end;" << endl;
+  indent_impl(s_service_impl) << "else begin" << endl;
+  indent_up_impl();
   indent_impl(s_service_impl) << "Result := False;" << endl;
   indent_impl(s_service_impl) << "Exit;" << endl;
+  indent_down_impl();
+  indent_impl(s_service_impl) << "end;" << endl;
   indent_down_impl();
   indent_impl(s_service_impl) << "end;" << endl;
   indent_impl(s_service_impl) << "Result := True;" << endl;
@@ -2434,8 +2452,7 @@ void t_delphi_generator::generate_process_function(t_service* tservice, t_functi
     indent_impl(s_service_impl) << "if events <> nil then events.UnhandledError(E);" << endl;
   }
   if (!tfunction->is_oneway()) {
-    indent_impl(s_service_impl) << "appx := TApplicationException.Create( "
-                                   "TApplicationException.TExceptionType.InternalError, E.Message);"
+	indent_impl(s_service_impl) << "appx := TApplicationExceptionInternalError.Create(E.Message);"
                                 << endl;
     indent_impl(s_service_impl) << "try" << endl;
     indent_up_impl();
@@ -2537,7 +2554,7 @@ void t_delphi_generator::generate_deserialize_field(ostream& out,
       case t_base_type::TYPE_BOOL:
         out << "ReadBool();";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
         out << "ReadByte();";
         break;
       case t_base_type::TYPE_I16:
@@ -2739,7 +2756,7 @@ void t_delphi_generator::generate_serialize_field(ostream& out,
       case t_base_type::TYPE_BOOL:
         out << "WriteBool(" << name << ");";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
         out << "WriteByte(" << name << ");";
         break;
       case t_base_type::TYPE_I16:
@@ -3029,7 +3046,7 @@ string t_delphi_generator::input_arg_prefix(t_type* ttype) {
       return "const ";
 
     // all others don't need to be
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
     case t_base_type::TYPE_I16:
     case t_base_type::TYPE_I32:
     case t_base_type::TYPE_BOOL:
@@ -3078,7 +3095,7 @@ string t_delphi_generator::base_type_name(t_base_type* tbase) {
     }
   case t_base_type::TYPE_BOOL:
     return "Boolean";
-  case t_base_type::TYPE_BYTE:
+  case t_base_type::TYPE_I8:
     return "ShortInt";
   case t_base_type::TYPE_I16:
     return "SmallInt";
@@ -3214,7 +3231,7 @@ string t_delphi_generator::type_to_enum(t_type* type) {
       return "TType.String_";
     case t_base_type::TYPE_BOOL:
       return "TType.Bool_";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "TType.Byte_";
     case t_base_type::TYPE_I16:
       return "TType.I16";
@@ -3262,7 +3279,7 @@ string t_delphi_generator::empty_value(t_type* type) {
       }
     case t_base_type::TYPE_BOOL:
       return "False";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
     case t_base_type::TYPE_I16:
     case t_base_type::TYPE_I32:
     case t_base_type::TYPE_I64:
@@ -3528,8 +3545,7 @@ void t_delphi_generator::generate_delphi_struct_reader_impl(ostream& out,
     indent_impl(code_block) << (*f_iter)->get_key() << ": begin" << endl;
     indent_up_impl();
     indent_impl(code_block) << "if (field_.Type_ = " << type_to_enum((*f_iter)->get_type())
-                            << ") then" << endl;
-    indent_impl(code_block) << "begin" << endl;
+                            << ") then begin" << endl;
     indent_up_impl();
 
     generate_deserialize_field(code_block, is_exception, *f_iter, "", local_vars);
@@ -3542,8 +3558,7 @@ void t_delphi_generator::generate_delphi_struct_reader_impl(ostream& out,
 
     indent_down_impl();
 
-    indent_impl(code_block) << "end else" << endl;
-    indent_impl(code_block) << "begin" << endl;
+    indent_impl(code_block) << "end else begin" << endl;
     indent_up_impl();
     indent_impl(code_block) << "TProtocolUtil.Skip(iprot, field_.Type_);" << endl;
     indent_down_impl();
@@ -3585,8 +3600,9 @@ void t_delphi_generator::generate_delphi_struct_reader_impl(ostream& out,
     if ((*f_iter)->get_req() == t_field::T_REQUIRED) {
       indent_impl(code_block) << "if not _req_isset_" << prop_name(*f_iter, is_exception) << endl;
       indent_impl(code_block)
-          << "then raise TProtocolException.Create( TProtocolException.INVALID_DATA, '"
-          << prop_name(*f_iter, is_exception) << "');" << endl;
+          << "then raise TProtocolExceptionInvalidData.Create("
+          << "'required field " << prop_name(*f_iter, is_exception) << " not set');" 
+          << endl;
     }
   }
 
@@ -3698,24 +3714,28 @@ void t_delphi_generator::generate_delphi_struct_writer_impl(ostream& out,
   }
 
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    string fieldname = prop_name((*f_iter), is_exception);
     bool null_allowed = type_can_be_null((*f_iter)->get_type());
-    bool is_optional = ((*f_iter)->get_req() != t_field::T_REQUIRED);
+    bool is_required = ((*f_iter)->get_req() == t_field::T_REQUIRED);
+    bool has_isset = (!is_required);
+    if (is_required && null_allowed) {
+      null_allowed = false;
+      indent_impl(code_block) << "if (" << fieldname << " = nil)" << endl;
+	  indent_impl(code_block) << "then raise TProtocolExceptionInvalidData.Create("
+                              << "'required field " << fieldname << " not set');" 
+                              << endl;
+    }
     if (null_allowed) {
-      indent_impl(code_block) << "if (" << prop_name((*f_iter), is_exception) << " <> nil)";
-      if (is_optional) {
-        code_block << " and __isset_" << prop_name(*f_iter, is_exception);
+      indent_impl(code_block) << "if (" << fieldname << " <> nil)";
+      if (has_isset) {
+        code_block << " and __isset_" << fieldname;
       }
-      code_block << " then" << endl;
-      indent_impl(code_block) << "begin" << endl;
+      code_block << " then begin" << endl;
       indent_up_impl();
     } else {
-      if (is_optional) {
-        indent_impl(code_block) << "if (__isset_" << prop_name(*f_iter, is_exception) << ") then"
-                                << endl;
-        indent_impl(code_block) << "begin" << endl;
+      if (has_isset) {
+        indent_impl(code_block) << "if (__isset_" << fieldname << ") then begin" << endl;
         indent_up_impl();
-      } else {
-        indent_impl(code_block) << "// required field" << endl;
       }
     }
     indent_impl(code_block) << "field_.Name := '" << (*f_iter)->get_name() << "';" << endl;
@@ -3725,7 +3745,7 @@ void t_delphi_generator::generate_delphi_struct_writer_impl(ostream& out,
     indent_impl(code_block) << "oprot.WriteFieldBegin(field_);" << endl;
     generate_serialize_field(code_block, is_exception, *f_iter, "", local_vars);
     indent_impl(code_block) << "oprot.WriteFieldEnd();" << endl;
-    if (null_allowed || is_optional) {
+    if (null_allowed || has_isset) {
       indent_down_impl();
       indent_impl(code_block) << "end;" << endl;
     }

@@ -36,6 +36,7 @@ namespace php ThriftTest
 namespace delphi Thrift.Test
 namespace cocoa ThriftTest
 namespace lua ThriftTest
+namespace xsd test (uri = 'http://thrift.apache.org/ns/ThriftTest')
 
 // Presence of namespaces and sub-namespaces for which there is
 // no generator should compile with warnings only
@@ -79,14 +80,14 @@ struct Bools {
 struct Xtruct
 {
   1:  string string_thing,
-  4:  byte   byte_thing,
+  4:  i8     byte_thing,
   9:  i32    i32_thing,
   11: i64    i64_thing
 }
 
 struct Xtruct2
 {
-  1: byte   byte_thing,
+  1: i8     byte_thing,  // used to be byte, hence the name
   2: Xtruct struct_thing,
   3: i32    i32_thing
 }
@@ -104,12 +105,13 @@ struct Insanity
 {
   1: map<Numberz, UserId> userMap,
   2: list<Xtruct> xtructs
-}
+} (python.immutable= "")
 
 struct CrazyNesting {
   1: string string_field,
   2: optional set<Insanity> set_field,
-  3: required list< map<set<i32>,map<i32,set<list<map<Insanity,string>>>>>> list_field,
+  // Do not insert line break as test/go/Makefile.am is removing this line with pattern match
+  3: required list<map<set<i32> (python.immutable = ""), map<i32,set<list<map<Insanity,string>(python.immutable = "")> (python.immutable = "")>>>> list_field,
   4: binary binary_field
 }
 
@@ -152,10 +154,11 @@ service ThriftTest
 
   /**
    * Prints 'testByte("%d")' with thing as '%d'
-   * @param byte thing - the byte to print
-   * @return byte - returns the byte 'thing'
+   * The types i8 and byte are synonyms, use of i8 is encouraged, byte still exists for the sake of compatibility.
+   * @param byte thing - the i8/byte to print
+   * @return i8 - returns the i8/byte 'thing'
    */
-  byte         testByte(1: byte thing),
+  i8           testByte(1: i8 thing),
 
   /**
    * Prints 'testI32("%d")' with thing as '%d'
@@ -268,7 +271,7 @@ service ThriftTest
 
   /**
    * Prints 'testMulti()'
-   * @param byte arg0 -
+   * @param i8 arg0 -
    * @param i32 arg1 -
    * @param i64 arg2 -
    * @param map<i16, string> arg3 -
@@ -277,7 +280,7 @@ service ThriftTest
    * @return Xtruct - returns an Xtruct with string_thing = "Hello2, byte_thing = arg0, i32_thing = arg1
    *    and i64_thing = arg2
    */
-  Xtruct testMulti(1: byte arg0, 2: i32 arg1, 3: i64 arg2, 4: map<i16, string> arg3, 5: Numberz arg4, 6: UserId arg5),
+  Xtruct testMulti(1: i8 arg0, 2: i32 arg1, 3: i64 arg2, 4: map<i16, string> arg3, 5: Numberz arg4, 6: UserId arg5),
 
   /**
    * Print 'testException(%s)' with arg as '%s'
@@ -328,7 +331,7 @@ struct VersioningTestV2 {
        1: i32 begin_in_both,
 
        2: i32 newint,
-       3: byte newbyte,
+       3: i8 newbyte,
        4: i16 newshort,
        5: i64 newlong,
        6: double newdouble

@@ -55,8 +55,14 @@ public:
                  const std::map<std::string, std::string>& parsed_options,
                  const std::string& option_string)
     : t_oop_generator(program) {
-    (void)parsed_options;
     (void)option_string;
+    std::map<std::string, std::string>::const_iterator iter;
+
+    /* no options yet */
+    for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
+      throw "unknown option st:" + iter->first; 
+    }
+
     out_dir_base_ = "gen-st";
   }
 
@@ -371,7 +377,7 @@ string t_st_generator::render_const_value(t_type* type, t_const_value* value) {
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
     case t_base_type::TYPE_I16:
     case t_base_type::TYPE_I32:
     case t_base_type::TYPE_I64:
@@ -788,7 +794,7 @@ string t_st_generator::write_val(t_type* t, string fname) {
     case t_base_type::TYPE_DOUBLE:
       return "iprot writeDouble: " + fname + " asFloat";
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
     case t_base_type::TYPE_I16:
     case t_base_type::TYPE_I32:
     case t_base_type::TYPE_I64:
@@ -1020,7 +1026,7 @@ string t_st_generator::type_to_enum(t_type* type) {
       return "TType string";
     case t_base_type::TYPE_BOOL:
       return "TType bool";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "TType byte";
     case t_base_type::TYPE_I16:
       return "TType i16";

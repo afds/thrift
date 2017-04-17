@@ -52,8 +52,14 @@ public:
     (void)option_string;
     std::map<std::string, std::string>::const_iterator iter;
 
-    iter = parsed_options.find("bindable");
-    bindable_ = (iter != parsed_options.end());
+    bindable_ = false;
+    for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
+      if( iter->first.compare("bindable") == 0) {
+        bindable_ = true;
+      } else {
+        throw "unknown option as3:" + iter->first; 
+      }
+    }
 
     out_dir_base_ = "gen-as3";
   }
@@ -578,7 +584,7 @@ string t_as3_generator::render_const_value(ofstream& out,
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "true" : "false");
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       render << "(byte)" << value->get_integer();
       break;
     case t_base_type::TYPE_I16:
@@ -920,6 +926,11 @@ void t_as3_generator::generate_as3_struct_writer(ofstream& out, t_struct* tstruc
   indent(out) << "oprot.writeStructBegin(STRUCT_DESC);" << endl;
 
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    bool could_be_unset = (*f_iter)->get_req() == t_field::T_OPTIONAL;
+    if (could_be_unset) {
+      indent(out) << "if (" << generate_isset_check(*f_iter) << ") {" << endl;
+      indent_up();
+    }
     bool null_allowed = type_can_be_null((*f_iter)->get_type());
     if (null_allowed) {
       out << indent() << "if (this." << (*f_iter)->get_name() << " != null) {" << endl;
@@ -936,6 +947,10 @@ void t_as3_generator::generate_as3_struct_writer(ofstream& out, t_struct* tstruc
     indent(out) << "oprot.writeFieldEnd();" << endl;
 
     if (null_allowed) {
+      indent_down();
+      indent(out) << "}" << endl;
+    }
+    if (could_be_unset) {
       indent_down();
       indent(out) << "}" << endl;
     }
@@ -1339,7 +1354,7 @@ std::string t_as3_generator::get_as3_type_string(t_type* type) {
     case t_base_type::TYPE_BOOL:
       return "TType.BOOL";
       break;
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "TType.BYTE";
       break;
     case t_base_type::TYPE_I16:
@@ -1370,7 +1385,7 @@ void t_as3_generator::generate_field_value_meta_data(std::ofstream& out, t_type*
   out << endl;
   indent_up();
   indent_up();
-  if (type->is_struct()) {
+  if (type->is_struct() || type->is_xception()) {
     indent(out) << "new StructMetaData(TType.STRUCT, " << type_name(type);
   } else if (type->is_container()) {
     if (type->is_list()) {
@@ -1978,7 +1993,7 @@ void t_as3_generator::generate_deserialize_field(ofstream& out, t_field* tfield,
       case t_base_type::TYPE_BOOL:
         out << "readBool();";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
         out << "readByte();";
         break;
       case t_base_type::TYPE_I16:
@@ -2162,7 +2177,7 @@ void t_as3_generator::generate_serialize_field(ofstream& out, t_field* tfield, s
       case t_base_type::TYPE_BOOL:
         out << "writeBool(" << name << ");";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
         out << "writeByte(" << name << ");";
         break;
       case t_base_type::TYPE_I16:
@@ -2351,7 +2366,7 @@ string t_as3_generator::base_type_name(t_base_type* type, bool in_container) {
     }
   case t_base_type::TYPE_BOOL:
     return "Boolean";
-  case t_base_type::TYPE_BYTE:
+  case t_base_type::TYPE_I8:
   case t_base_type::TYPE_I16:
   case t_base_type::TYPE_I32:
     return "int";
@@ -2388,7 +2403,7 @@ string t_as3_generator::declare_field(t_field* tfield, bool init) {
       case t_base_type::TYPE_BOOL:
         result += " = false";
         break;
-      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I8:
       case t_base_type::TYPE_I16:
       case t_base_type::TYPE_I32:
       case t_base_type::TYPE_I64:
@@ -2465,7 +2480,7 @@ string t_as3_generator::type_to_enum(t_type* type) {
       return "TType.STRING";
     case t_base_type::TYPE_BOOL:
       return "TType.BOOL";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "TType.BYTE";
     case t_base_type::TYPE_I16:
       return "TType.I16";

@@ -51,8 +51,14 @@ public:
                  const map<string, string>& parsed_options,
                  const string& option_string)
     : t_oop_generator(program) {
-    (void)parsed_options;
     (void)option_string;
+    std::map<std::string, std::string>::const_iterator iter;
+
+    /* no options yet */
+    for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
+      throw "unknown option hs:" + iter->first; 
+    }
+
     out_dir_base_ = "gen-hs";
   }
 
@@ -379,18 +385,18 @@ string t_hs_generator::render_const_value(t_type* type, t_const_value* value) {
       out << (value->get_integer() > 0 ? "P.True" : "P.False");
       break;
 
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
     case t_base_type::TYPE_I16:
     case t_base_type::TYPE_I32:
     case t_base_type::TYPE_I64:
-      out << value->get_integer();
+      out << "(" << value->get_integer() << ")";
       break;
 
     case t_base_type::TYPE_DOUBLE:
       if (value->get_type() == t_const_value::CV_INTEGER) {
-        out << value->get_integer();
+        out << "(" << value->get_integer() << ")";
       } else {
-        out << value->get_double();
+        out << "(" << value->get_double() << ")";
       }
       break;
 
@@ -1367,6 +1373,11 @@ void t_hs_generator::generate_deserialize_type(ofstream& out, t_type* type, stri
       out << "E.decodeUtf8 ";
     }
     out << val;
+    if (((t_base_type*)type)->is_binary()) {
+      // Since wire type of binary is the same as string, we actually receive T.TString not
+      // T.TBinary
+      out << "; T.TString " << val << " -> " << val;
+    }
   } else if (type->is_enum()) {
     out << "P.toEnum $ P.fromIntegral " << val;
 
@@ -1539,10 +1550,10 @@ string t_hs_generator::type_to_enum(t_type* type) {
     case t_base_type::TYPE_VOID:
       return "T.T_VOID";
     case t_base_type::TYPE_STRING:
-      return "T.T_STRING";
+      return ((t_base_type*)type)->is_binary() ? "T.T_BINARY" : "T.T_STRING";
     case t_base_type::TYPE_BOOL:
       return "T.T_BOOL";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "T.T_BYTE";
     case t_base_type::TYPE_I16:
       return "T.T_I16";
@@ -1590,7 +1601,7 @@ string t_hs_generator::type_to_default(t_type* type) {
       return "\"\"";
     case t_base_type::TYPE_BOOL:
       return "P.False";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "0";
     case t_base_type::TYPE_I16:
       return "0";
@@ -1637,7 +1648,7 @@ string t_hs_generator::render_hs_type(t_type* type, bool needs_parens) {
       return (((t_base_type*)type)->is_binary() ? "LBS.ByteString" : "LT.Text");
     case t_base_type::TYPE_BOOL:
       return "P.Bool";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "I.Int8";
     case t_base_type::TYPE_I16:
       return "I.Int16";
@@ -1687,10 +1698,10 @@ string t_hs_generator::type_to_constructor(t_type* type) {
     case t_base_type::TYPE_VOID:
       throw "invalid type: T_VOID";
     case t_base_type::TYPE_STRING:
-      return "T.TString";
+      return ((t_base_type*)type)->is_binary() ? "T.TBinary" : "T.TString";
     case t_base_type::TYPE_BOOL:
       return "T.TBool";
-    case t_base_type::TYPE_BYTE:
+    case t_base_type::TYPE_I8:
       return "T.TByte";
     case t_base_type::TYPE_I16:
       return "T.TI16";
